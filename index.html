@@ -7,11 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js">
-var SUPABASE_URL = "https://jkqkohhfoqaeszfzykbo.supabase.co";
-var SUPABASE_ANON_KEY = "sb_publishable_wZPckTyWZG-D9gs6HorRKA_snXc1h_O";
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
 :root{
   --bg:#ff7ab8; --paper:#fff3a8; --ink:#1a1030; --slime:#8dff2e; --slime-dark:#4fc400;
@@ -291,12 +287,9 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
 (function(){
   "use strict";
 
-  /* =====================================================
-     CONFIG : colle ici les infos de ton projet Supabase
-     (voir README.md). Vide = classement et comptes désactivés.
-     ===================================================== */
-  var SUPABASE_URL = "";
-  var SUPABASE_ANON_KEY = "";
+  var SUPABASE_URL = "https://jkqkohhfoqaeszfzykbo.supabase.co";
+  var SUPABASE_ANON_KEY = "sb_publishable_wZPckTyWZG-D9gs6HorRKA_snXc1h_O";
+
 
   var ONLINE = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
   var sb = ONLINE ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
