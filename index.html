@@ -455,7 +455,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
       ul.appendChild(el("li", "empty", "Rien dans le journal pour l’instant. Écris ce qui t’a écœuré aujourd’hui, tu seras content de le retrouver plus tard."));
       return;
     }
-    state.entries.slice().reverse().slice(0, 150).forEach(function(e){
+    state.entries.slice().reverse().slice(0, 100).forEach(function(e){
       var li = el("li");
       var top = el("div", "h-top");
       top.appendChild(el("span", "", fmtDate(e.created_at)));
@@ -596,7 +596,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
   $("phrase").addEventListener("input", function(){ $("phraseCount").textContent = $("phrase").value.length; });
   $("phraseSave").addEventListener("click", async function(){
     if(!user) return;
-    var phrase = $("phrase").value.trim().slice(0, 100);
+    var phrase = $("phrase").value.trim().slice(0, 150);
     var r = await sb.from("profiles").update({ phrase: phrase, updated_at: new Date().toISOString() }).eq("id", user.id);
     if(r.error) say("Impossible d’enregistrer ta phrase.");
     else { say("Phrase publiée au classement."); loadBoard(); }
