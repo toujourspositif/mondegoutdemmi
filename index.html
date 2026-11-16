@@ -184,8 +184,8 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
         <div id="phraseForm" hidden>
           <div class="field">
             <label for="phrase">Ton cri du cœur</label>
-            <input type="text" id="phrase" maxlength="100" placeholder="Ex : Encore du dev...">
-            <div class="count"><span id="phraseCount">0</span>/100</div>
+            <input type="text" id="phrase" maxlength="150" placeholder="Ex : Encore du dev...">
+            <div class="count"><span id="phraseCount">0</span>/150</div>
           </div>
           <button class="up small" id="phraseSave">Publier ma phrase</button>
         </div>
@@ -455,7 +455,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
       ul.appendChild(el("li", "empty", "Rien dans le journal pour l’instant. Écris ce qui t’a écœuré aujourd’hui, tu seras content de le retrouver plus tard."));
       return;
     }
-    state.entries.slice().reverse().slice(0, 100).forEach(function(e){
+    state.entries.slice().reverse().slice(0, 150).forEach(function(e){
       var li = el("li");
       var top = el("div", "h-top");
       top.appendChild(el("span", "", fmtDate(e.created_at)));
