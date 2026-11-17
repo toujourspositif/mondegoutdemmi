@@ -176,6 +176,17 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
   <div class="layout">
     <!-- ======== COLONNE GAUCHE : CLASSEMENT ======== -->
     <aside>
+      <section class="card" id="pseudoCard" hidden>
+        <h2>Mon pseudo</h2>
+        <div class="field">
+          <label for="pseudoEdit">Pseudo visible au classement</label>
+          <input type="text" id="pseudoEdit" maxlength="20" autocomplete="nickname">
+          <div class="count"><span id="pseudoCount">0</span>/20</div>
+        </div>
+        <button class="small" id="pseudoSave">Changer mon pseudo</button>
+        <p class="status" id="pseudoMsg" role="status" style="margin:10px 0 0"></p>
+      </section>
+
       <section class="card" id="profileCard">
         <h2>Ma phrase d’accroche</h2>
         <div id="guestCta">
@@ -592,6 +603,37 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
   }
   setInterval(function(){ if(!document.hidden) loadBoard(); }, 30000);
 
+  /* ---------- changer de pseudo ---------- */
+  var myPseudo = "", pseudoTimer;
+  function sayPseudo(msg){
+    $("pseudoMsg").textContent = msg || "";
+    clearTimeout(pseudoTimer);
+    if(msg) pseudoTimer = setTimeout(function(){ $("pseudoMsg").textContent = ""; }, 5000);
+  }
+  $("pseudoEdit").addEventListener("input", function(){ $("pseudoCount").textContent = $("pseudoEdit").value.length; });
+  $("pseudoSave").addEventListener("click", async function(){
+    if(!user) return;
+    var pseudo = $("pseudoEdit").value.trim();
+    if(pseudo.length < 2 || pseudo.length > 20){ sayPseudo("Choisis un pseudo de 2 à 20 caractères."); return; }
+    if(pseudo === myPseudo){ sayPseudo("C'est déjà ton pseudo."); return; }
+    var btn = $("pseudoSave"); btn.disabled = true;
+    try{
+      // pseudo déjà pris par quelqu'un d'autre ? (on neutralise % et _ pour la recherche)
+      var safe = pseudo.replace(/[\\%_]/g, "\\$&");
+      var chk = await sb.from("profiles").select("id").ilike("pseudo", safe).neq("id", user.id).limit(1);
+      if(!chk.error && chk.data && chk.data.length){ sayPseudo("Ce pseudo est déjà pris."); return; }
+      var r = await sb.from("profiles").update({ pseudo: pseudo, updated_at: new Date().toISOString() }).eq("id", user.id);
+      if(r.error){
+        sayPseudo(r.error.code === "23505" ? "Ce pseudo est déjà pris." : "Impossible de changer le pseudo pour le moment.");
+        return;
+      }
+      myPseudo = pseudo;
+      $("who").textContent = "Connecté : " + pseudo;
+      sayPseudo("Pseudo changé. Tu apparais maintenant sous ce nom au classement.");
+      loadBoard();
+    } finally { btn.disabled = false; }
+  });
+
   /* ---------- phrase d'accroche ---------- */
   $("phrase").addEventListener("input", function(){ $("phraseCount").textContent = $("phrase").value.length; });
   $("phraseSave").addEventListener("click", async function(){
@@ -662,6 +704,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     $("who").textContent = "Mode invité : ta jauge reste dans ce navigateur.";
     $("btnLogin").hidden = false; $("btnLogout").hidden = true;
     $("guestCta").hidden = false; $("phraseForm").hidden = true;
+    $("pseudoCard").hidden = true;
   }
 
   async function afterLogin(){
@@ -692,6 +735,9 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     var er = await sb.from("entries").select("id,text,delta,level,created_at").order("created_at", { ascending:true }).limit(500);
     state = { level: clamp(profile.level), entries: er.data || [] };
 
+    myPseudo = profile.pseudo;
+    $("pseudoEdit").value = myPseudo; $("pseudoCount").textContent = myPseudo.length;
+    $("pseudoCard").hidden = false;
     $("who").textContent = "Connecté : " + profile.pseudo;
     $("btnLogin").hidden = true; $("btnLogout").hidden = false;
     $("guestCta").hidden = true; $("phraseForm").hidden = false;
