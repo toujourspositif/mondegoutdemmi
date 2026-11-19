@@ -150,6 +150,22 @@ input[type=range]{width:100%;accent-color:var(--blue);height:28px;margin:4px 0 0
 .h-text{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
 .history .empty{font-weight:700;background:var(--white);border:3px solid var(--ink);padding:10px 12px}
 
+/* ---------- onglets + actualités ---------- */
+[hidden]{display:none!important}
+.center{min-width:0}
+.maintabs{display:flex;gap:12px;margin:0 0 24px}
+.maintabs button{flex:1;font-size:1.1rem;padding:12px 14px}
+.maintabs button[aria-selected=true]{background:var(--slime)}
+.news{display:flex;flex-direction:column;gap:20px;min-width:0}
+.feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.feed li{background:var(--white);border:3px solid var(--ink);padding:10px 12px;box-shadow:3px 3px 0 var(--ink)}
+.feed li.mine{background:#f2ffd6}
+.f-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.85rem;font-weight:700;margin-bottom:6px}
+.f-top .grow{flex:1}
+.f-name{font-family:"Bowlby One",Impact,sans-serif;font-weight:400;background:var(--slime);border:2px solid var(--ink);padding:1px 8px;overflow-wrap:anywhere}
+.f-text{margin:0;overflow-wrap:anywhere;white-space:pre-wrap;font-size:1.02rem}
+.feed .empty{font-weight:700;box-shadow:none}
+
 /* ---------- connexion ---------- */
 dialog{border:4px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:22px;width:min(420px,92vw);color:var(--ink)}
 dialog::backdrop{background:rgba(26,16,48,.6)}
@@ -210,6 +226,12 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     </aside>
 
     <!-- ======== ZONE CENTRALE ======== -->
+    <div class="center">
+    <div class="maintabs" role="tablist">
+      <button type="button" role="tab" id="tabGauge" aria-selected="true">Ma jauge</button>
+      <button type="button" role="tab" id="tabNews" aria-selected="false">Actualités</button>
+    </div>
+
     <div class="lab" id="lab">
       <div class="tube-wrap">
         <div class="tube-box" id="tubeBox">
@@ -261,6 +283,35 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
           <ul class="history" id="history"></ul>
         </section>
       </div>
+    </div>
+
+    <!-- ======== ACTUALITÉS ======== -->
+    <section class="news" id="newsView" hidden>
+      <div class="card" id="newsGuest">
+        <h2>Actualités</h2>
+        <p>Lis ce que les autres écœurés ont sur le cœur. Connecte-toi pour publier toi aussi.</p>
+      </div>
+
+      <div class="card" id="newsComposer" hidden>
+        <h2>Partager une actualité</h2>
+        <div class="field">
+          <label for="newsText">Ta pensée du jour (visible par tout le monde)</label>
+          <textarea id="newsText" maxlength="500" placeholder="Ex : Quelqu'un a encore dit « tu peux faire le logo en 5 minutes ? »"></textarea>
+          <div class="count"><span id="newsCount">0</span>/500</div>
+        </div>
+        <button class="primary" id="newsPublish">Publier</button>
+        <p class="status" id="newsMsg" role="status" style="margin:10px 0 0"></p>
+      </div>
+
+      <div class="card">
+        <h2>Fil d’actualités</h2>
+        <ul class="feed" id="newsList"></ul>
+        <div class="row" style="margin-top:14px">
+          <button id="newsMore" hidden>Voir plus anciennes</button>
+          <button id="newsRefresh">Actualiser</button>
+        </div>
+      </div>
+    </section>
     </div>
   </div>
 
@@ -399,7 +450,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
 
   /* ---------- bulles ---------- */
   setInterval(function(){
-    if(state.level < 4 || document.hidden) return;
+    if(state.level < 4 || document.hidden || $("lab").hidden) return;
     var liquid = $("liquid");
     var size = 8 + Math.random()*16;
     var b = el("div", "bubble");
@@ -603,6 +654,90 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
   }
   setInterval(function(){ if(!document.hidden) loadBoard(); }, 30000);
 
+  /* ---------- onglets + actualités ---------- */
+  var NEWS_PAGE = 20, newsLimit = NEWS_PAGE, newsMsgTimer;
+  function sayNews(msg){
+    $("newsMsg").textContent = msg || "";
+    clearTimeout(newsMsgTimer);
+    if(msg) newsMsgTimer = setTimeout(function(){ $("newsMsg").textContent = ""; }, 5000);
+  }
+  function newsVisible(){ return !$("newsView").hidden; }
+  function showTab(name){
+    var news = name === "news";
+    $("lab").hidden = news;
+    $("newsView").hidden = !news;
+    $("tabGauge").setAttribute("aria-selected", String(!news));
+    $("tabNews").setAttribute("aria-selected", String(news));
+    if(news) loadNews();
+  }
+  $("tabGauge").addEventListener("click", function(){ showTab("gauge"); });
+  $("tabNews").addEventListener("click", function(){ showTab("news"); });
+
+  function renderNews(rows, more, msg){
+    var ul = $("newsList");
+    ul.replaceChildren();
+    if(msg){ ul.appendChild(el("li", "empty", msg)); }
+    else if(!rows.length){ ul.appendChild(el("li", "empty", "Aucune actualité pour l’instant. Écris la première.")); }
+    rows.forEach(function(r){
+      var mine = !!(user && r.user_id === user.id);
+      var li = el("li", mine ? "mine" : "");
+      var top = el("div", "f-top");
+      top.appendChild(el("span", "f-name", (r.profiles && r.profiles.pseudo) || "Anonyme"));
+      top.appendChild(el("span", "", fmtDate(r.created_at)));
+      top.appendChild(el("span", "grow"));
+      if(mine){
+        var del = el("button", "small", "Supprimer");
+        del.setAttribute("aria-label", "Supprimer cette actualité");
+        del.addEventListener("click", function(){ deleteNews(r.id); });
+        top.appendChild(del);
+      }
+      li.appendChild(top);
+      li.appendChild(el("p", "f-text", r.text));
+      ul.appendChild(li);
+    });
+    $("newsMore").hidden = !more;
+  }
+
+  async function loadNews(){
+    if(!sb){ renderNews([], false, "Les actualités s’activeront une fois Supabase configuré."); return; }
+    var r = await sb.from("posts").select("id,user_id,text,created_at,profiles(pseudo)")
+      .order("created_at", { ascending:false }).range(0, newsLimit);      // newsLimit + 1 lignes
+    if(r.error){ renderNews([], false, "Actualités indisponibles pour le moment."); return; }
+    var rows = r.data || [], more = rows.length > newsLimit;
+    renderNews(more ? rows.slice(0, newsLimit) : rows, more);
+  }
+
+  async function deleteNews(id){
+    if(!confirm("Supprimer cette actualité pour tout le monde ?")) return;
+    var r = await sb.from("posts").delete().eq("id", id);
+    if(r.error){ sayNews("Suppression impossible."); return; }
+    loadNews();
+  }
+
+  $("newsText").addEventListener("input", function(){ $("newsCount").textContent = $("newsText").value.length; });
+  $("newsPublish").addEventListener("click", async function(){
+    if(!user) return;
+    var text = $("newsText").value.trim().slice(0, 500);
+    if(!text){ sayNews("Écris quelque chose avant de publier."); return; }
+    var btn = $("newsPublish"); btn.disabled = true;
+    try{
+      var r = await sb.from("posts").insert({ text: text });
+      if(r.error){
+        sayNews(r.error.code === "42501" ? "Tu publies trop vite : patiente une vingtaine de secondes."
+              : r.error.code === "23503" ? "Ton profil n’est pas prêt : déconnecte-toi puis reconnecte-toi."
+              : "Impossible de publier pour le moment.");
+        return;
+      }
+      $("newsText").value = ""; $("newsCount").textContent = 0;
+      sayNews("Publié. Tout le monde peut le lire.");
+      newsLimit = NEWS_PAGE;
+      loadNews();
+    } finally { btn.disabled = false; }
+  });
+  $("newsMore").addEventListener("click", function(){ newsLimit += NEWS_PAGE; loadNews(); });
+  $("newsRefresh").addEventListener("click", function(){ loadNews(); });
+  setInterval(function(){ if(!document.hidden && newsVisible()) loadNews(); }, 60000);
+
   /* ---------- changer de pseudo ---------- */
   var myPseudo = "", pseudoTimer;
   function sayPseudo(msg){
@@ -705,6 +840,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     $("btnLogin").hidden = false; $("btnLogout").hidden = true;
     $("guestCta").hidden = false; $("phraseForm").hidden = true;
     $("pseudoCard").hidden = true;
+    $("newsComposer").hidden = true; $("newsGuest").hidden = false;
   }
 
   async function afterLogin(){
@@ -738,6 +874,8 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     myPseudo = profile.pseudo;
     $("pseudoEdit").value = myPseudo; $("pseudoCount").textContent = myPseudo.length;
     $("pseudoCard").hidden = false;
+    $("newsComposer").hidden = false; $("newsGuest").hidden = true;
+    if(newsVisible()) loadNews();
     $("who").textContent = "Connecté : " + profile.pseudo;
     $("btnLogin").hidden = true; $("btnLogout").hidden = false;
     $("guestCta").hidden = true; $("phraseForm").hidden = false;
@@ -754,6 +892,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
       } else if(!u && user){
         user = null;
         state = loadGuest(); showGuestUI(); renderAll(); loadBoard();
+        if(newsVisible()) loadNews();
       }
     });
   }
