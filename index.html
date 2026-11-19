@@ -97,6 +97,8 @@ label{display:block;font-weight:700;margin:0 0 6px}
 }
 .phrase:empty{display:none}
 .board .board-note{display:block;padding:12px;font-weight:700}
+.board li.inf .pct{color:#d6001c}
+.board li.inf .mini i{background:#ff4b4b}
 
 /* ---------- tube ---------- */
 .lab{display:grid;grid-template-columns:minmax(200px,230px) 1fr;gap:32px;align-items:start}
@@ -396,16 +398,14 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
   }
   var INF = 101;                 // 101 = « +∞ » (au-delà de 100 %)
   function clamp(v){ return Math.max(0, Math.min(INF, Math.round(v))); }
-  // À 100 %, un point de plus fait passer en +∞. En redescendant, +∞ revient d'abord à 100 %.
+  // À 100 %, un point de plus fait passer en +∞ (enregistré en base sous la valeur 101).
+  // En redescendant, +∞ revient d'abord à 100 %.
   function applyDelta(prev, d){
     if(d === 0) return prev;
     if(d > 0) return prev >= 100 ? INF : Math.min(100, prev + d);
     if(prev > 100) return 100;
     return Math.max(0, prev + d);
   }
-  // La base de données garde 0-100 : l'état +∞ est mémorisé sur cet appareil.
-  function infKey(){ return "degout-mmi-inf-" + (user ? user.id : "x"); }
-  function loadInf(){ try{ return localStorage.getItem(infKey()) === "1"; }catch(e){ return false; } }
 
   var state = { level: 0, entries: [] };
   var user = null;              // utilisateur Supabase ou null (invité)
@@ -586,13 +586,9 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
   /* ---------- actions sur la jauge ---------- */
   function persistLevel(){
     if(!user){ saveGuest(); return; }
-    try{
-      if(state.level > 100) localStorage.setItem(infKey(), "1");
-      else localStorage.removeItem(infKey());
-    }catch(e){}
     clearTimeout(syncTimer);
     syncTimer = setTimeout(async function(){
-      var r = await sb.from("profiles").update({ level: Math.min(state.level, 100), updated_at: new Date().toISOString() }).eq("id", user.id);
+      var r = await sb.from("profiles").update({ level: state.level, updated_at: new Date().toISOString() }).eq("id", user.id);
       if(r.error) say("Synchronisation impossible pour le moment.");
       else loadBoard();
     }, 600);
@@ -604,7 +600,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     var after = (typeof target === "number") ? target : applyDelta(before, delta);
     var entry = { text: text, delta: after - before, level: after, created_at: new Date().toISOString() };
     if(user){
-      var r = await sb.from("entries").insert({ text: entry.text, delta: entry.delta, level: Math.min(entry.level, 100), created_at: entry.created_at }).select().single();
+      var r = await sb.from("entries").insert({ text: entry.text, delta: entry.delta, level: entry.level, created_at: entry.created_at }).select().single();
       if(r.error){ say("Impossible d’enregistrer la note. Réessaie."); return false; }
       entry.id = r.data.id;
       state.level = after;
@@ -681,11 +677,11 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     ol.replaceChildren();
     if(msg){ ol.appendChild(el("li", "board-note", msg)); }
     rows.forEach(function(r, i){
-      var li = el("li", user && r.id === user.id ? "me" : "");
+      var li = el("li", (user && r.id === user.id ? "me" : "") + (r.level > 100 ? " inf" : ""));
       li.appendChild(el("span", "rank", String(i + 1)));
       li.appendChild(el("span", "pseudo", r.pseudo));
-      li.appendChild(el("span", "pct", r.level + " %"));
-      var bar = el("div", "mini"); var fill = el("i"); fill.style.width = r.level + "%"; bar.appendChild(fill);
+      li.appendChild(el("span", "pct", r.level > 100 ? "+∞" : r.level + " %"));
+      var bar = el("div", "mini"); var fill = el("i"); fill.style.width = Math.min(r.level, 100) + "%"; bar.appendChild(fill);
       li.appendChild(bar);
       li.appendChild(el("div", "phrase", r.phrase || ""));
       ol.appendChild(li);
@@ -902,7 +898,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     if(!profile){
       var name = String(meta).slice(0, 20), tries = 0, ins;
       do{
-        ins = await sb.from("profiles").insert({ id: user.id, pseudo: name, level: Math.min(localGuest.level, 100) }).select().single();
+        ins = await sb.from("profiles").insert({ id: user.id, pseudo: name, level: localGuest.level }).select().single();
         if(ins.error && ins.error.code === "23505"){ name = String(meta).slice(0, 15) + Math.floor(Math.random()*900 + 100); tries++; }
         else break;
       } while(tries < 5);
@@ -911,7 +907,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
       // reprise du journal invité
       if(localGuest.entries.length){
         var rows = localGuest.entries.slice(-200).map(function(e){
-          return { text: e.text || "", delta: e.delta || 0, level: Math.min(clamp(e.level), 100), created_at: e.created_at };
+          return { text: e.text || "", delta: e.delta || 0, level: clamp(e.level), created_at: e.created_at };
         });
         await sb.from("entries").insert(rows);
         say("Ton journal invité a été repris sur ton compte.", 6000);
@@ -919,9 +915,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     }
 
     var er = await sb.from("entries").select("id,text,delta,level,created_at").order("created_at", { ascending:true }).limit(500);
-    var lvl = clamp(profile.level);
-    if(lvl >= 100 && loadInf()) lvl = INF;          // état +∞ mémorisé sur cet appareil
-    state = { level: lvl, entries: er.data || [] };
+    state = { level: clamp(profile.level), entries: er.data || [] };
 
     myPseudo = profile.pseudo;
     $("pseudoEdit").value = myPseudo; $("pseudoCount").textContent = myPseudo.length;
