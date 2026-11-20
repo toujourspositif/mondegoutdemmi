@@ -113,11 +113,11 @@ label{display:block;font-weight:700;margin:0 0 6px}
 .cap{position:absolute;left:-14px;right:-14px;top:-22px;height:26px;background:var(--blue);border:5px solid var(--ink);border-radius:10px;z-index:6}
 .liquid{
   position:absolute;left:0;right:0;bottom:0;height:0%;
-  background:linear-gradient(180deg,var(--slime) 0%,var(--slime-dark) 100%);
+  background:linear-gradient(180deg,var(--liq-top,var(--slime)) 0%,var(--liq-bot,var(--slime-dark)) 100%);
   transition:height .9s cubic-bezier(.3,1.4,.5,1);z-index:2;
 }
 .wave{position:absolute;left:0;top:-18px;width:200%;height:20px;overflow:visible}
-.wave path{fill:var(--slime)}
+.wave path{fill:var(--liq-top,var(--slime))}
 .wave.w1{animation:slosh 3.2s linear infinite}
 .wave.w2{top:-12px;opacity:.55;animation:slosh 5s linear infinite reverse}
 @keyframes slosh{to{transform:translateX(-50%)}}
@@ -128,8 +128,41 @@ label{display:block;font-weight:700;margin:0 0 6px}
 .tick.big{width:40px}
 .tube-box.shake{animation:shake .35s infinite}
 @keyframes shake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-4px) rotate(-1.5deg)}75%{transform:translateX(4px) rotate(1.5deg)}}
-.drip{position:absolute;top:-6px;left:50%;width:18px;height:18px;margin-left:-9px;background:var(--slime);border:3px solid var(--ink);border-radius:50% 50% 50% 0;transform:rotate(-45deg) scale(0);transition:transform .3s;z-index:7}
+.drip{position:absolute;top:-6px;left:50%;width:18px;height:18px;margin-left:-9px;background:var(--liq-top,var(--slime));border:3px solid var(--ink);border-radius:50% 50% 50% 0;transform:rotate(-45deg) scale(0);transition:transform .3s;z-index:7}
 .full .drip{transform:rotate(-45deg) scale(1)}
+
+/* ---------- 0-20 % : le jardin (fleurs + papillons) ---------- */
+.garden{
+  position:absolute;left:-46px;right:-46px;top:-40px;bottom:-6px;pointer-events:none;z-index:9;
+  opacity:0;visibility:hidden;transition:opacity .8s,visibility 0s .8s;
+}
+.bloom .garden{opacity:1;visibility:visible;transition:opacity .8s}
+.flower{
+  position:absolute;bottom:0;height:auto;
+  transform:scaleY(0);transform-origin:50% 100%;
+  transition:transform .9s cubic-bezier(.3,1.5,.5,1);
+}
+.bloom .flower{transform:scaleY(1)}
+.flower .sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 3.4s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+.flower .petals{fill:var(--pc)}
+.fl1{left:2px;width:34px;transition-delay:.05s}
+.fl2{left:34px;width:26px;transition-delay:.25s}
+.fl3{right:2px;width:36px;transition-delay:.15s}
+.fl4{right:36px;width:28px;transition-delay:.35s}
+.fl2 .sway{animation-delay:-1.2s} .fl3 .sway{animation-delay:-2s} .fl4 .sway{animation-delay:-.6s}
+.bfly{position:absolute;width:34px;height:auto}
+.bfly .wing{fill:var(--wc);stroke:var(--ink);stroke-width:1.5;stroke-linejoin:round}
+.bfly .wl,.bfly .wr{transform-box:fill-box;animation:flap .3s ease-in-out infinite alternate}
+.bfly .wl{transform-origin:100% 50%}
+.bfly .wr{transform-origin:0 50%}
+@keyframes flap{to{transform:scaleX(.2)}}
+.b1{left:4px;top:190px;animation:fly1 9s ease-in-out infinite}
+.b2{right:8px;top:120px;animation:fly2 11s ease-in-out -3s infinite}
+.b3{left:64px;top:30px;animation:fly3 13s ease-in-out -6s infinite}
+@keyframes fly1{0%,100%{transform:translate(0,0) rotate(-8deg)}25%{transform:translate(34px,-60px) rotate(12deg)}50%{transform:translate(8px,-120px) rotate(-6deg)}75%{transform:translate(-14px,-50px) rotate(14deg)}}
+@keyframes fly2{0%,100%{transform:translate(0,0) rotate(8deg)}30%{transform:translate(-40px,40px) rotate(-12deg)}60%{transform:translate(-10px,110px) rotate(10deg)}80%{transform:translate(14px,50px) rotate(-8deg)}}
+@keyframes fly3{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(50px,26px) rotate(14deg)}50%{transform:translate(90px,-6px) rotate(-10deg)}75%{transform:translate(30px,50px) rotate(8deg)}}
 
 /* ---------- +∞ : liquide rouge, tube fissuré ---------- */
 .cracks{position:absolute;inset:0;width:100%;height:100%;z-index:8;pointer-events:none;overflow:visible}
@@ -276,6 +309,15 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
             <path class="c-hi" pathLength="1" d="M112 238 L138 256"/>
             <path class="c-hi" pathLength="1" d="M76 348 L104 362"/>
           </svg>
+          <div class="garden" aria-hidden="true">
+          <svg class="flower fl1" viewBox="0 0 40 90" style="--pc:#ffd23d" aria-hidden="true"><g class="sway"><path d="M20 90 C17 72 24 56 20 36" fill="none" stroke="#2f9e44" stroke-width="4" stroke-linecap="round"/><path d="M20 68 C8 66 5 56 7 51 C15 52 20 58 20 68Z" fill="#4cc760" stroke="#1a1030" stroke-width="2"/><path d="M21 60 C33 58 36 48 34 43 C26 44 21 50 21 60Z" fill="#4cc760" stroke="#1a1030" stroke-width="2"/><g class="petals" stroke="#1a1030" stroke-width="2"><circle cx="29" cy="26" r="6.5"/><circle cx="24.5" cy="33.8" r="6.5"/><circle cx="15.5" cy="33.8" r="6.5"/><circle cx="11" cy="26" r="6.5"/><circle cx="15.5" cy="18.2" r="6.5"/><circle cx="24.5" cy="18.2" r="6.5"/></g><circle cx="20" cy="26" r="6" fill="#ff9f1c" stroke="#1a1030" stroke-width="2"/></g></svg>
+          <svg class="flower fl2" viewBox="0 0 40 90" style="--pc:#ffffff" aria-hidden="true"><g class="sway"><path d="M20 90 C17 72 24 56 20 36" fill="none" stroke="#2f9e44" stroke-width="4" stroke-linecap="round"/><path d="M20 68 C8 66 5 56 7 51 C15 52 20 58 20 68Z" fill="#4cc760" stroke="#1a1030" stroke-width="2"/><path d="M21 60 C33 58 36 48 34 43 C26 44 21 50 21 60Z" fill="#4cc760" stroke="#1a1030" stroke-width="2"/><g class="petals" stroke="#1a1030" stroke-width="2"><circle cx="29" cy="26" r="6.5"/><circle cx="24.5" cy="33.8" r="6.5"/><circle cx="15.5" cy="33.8" r="6.5"/><circle cx="11" cy="26" r="6.5"/><circle cx="15.5" cy="18.2" r="6.5"/><circle cx="24.5" cy="18.2" r="6.5"/></g><circle cx="20" cy="26" r="6" fill="#ff9f1c" stroke="#1a1030" stroke-width="2"/></g></svg>
+          <svg class="flower fl3" viewBox="0 0 40 90" style="--pc:#b28dff" aria-hidden="true"><g class="sway"><path d="M20 90 C17 72 24 56 20 36" fill="none" stroke="#2f9e44" stroke-width="4" stroke-linecap="round"/><path d="M20 68 C8 66 5 56 7 51 C15 52 20 58 20 68Z" fill="#4cc760" stroke="#1a1030" stroke-width="2"/><path d="M21 60 C33 58 36 48 34 43 C26 44 21 50 21 60Z" fill="#4cc760" stroke="#1a1030" stroke-width="2"/><g class="petals" stroke="#1a1030" stroke-width="2"><circle cx="29" cy="26" r="6.5"/><circle cx="24.5" cy="33.8" r="6.5"/><circle cx="15.5" cy="33.8" r="6.5"/><circle cx="11" cy="26" r="6.5"/><circle cx="15.5" cy="18.2" r="6.5"/><circle cx="24.5" cy="18.2" r="6.5"/></g><circle cx="20" cy="26" r="6" fill="#ff9f1c" stroke="#1a1030" stroke-width="2"/></g></svg>
+          <svg class="flower fl4" viewBox="0 0 40 90" style="--pc:#ff9a3c" aria-hidden="true"><g class="sway"><path d="M20 90 C17 72 24 56 20 36" fill="none" stroke="#2f9e44" stroke-width="4" stroke-linecap="round"/><path d="M20 68 C8 66 5 56 7 51 C15 52 20 58 20 68Z" fill="#4cc760" stroke="#1a1030" stroke-width="2"/><path d="M21 60 C33 58 36 48 34 43 C26 44 21 50 21 60Z" fill="#4cc760" stroke="#1a1030" stroke-width="2"/><g class="petals" stroke="#1a1030" stroke-width="2"><circle cx="29" cy="26" r="6.5"/><circle cx="24.5" cy="33.8" r="6.5"/><circle cx="15.5" cy="33.8" r="6.5"/><circle cx="11" cy="26" r="6.5"/><circle cx="15.5" cy="18.2" r="6.5"/><circle cx="24.5" cy="18.2" r="6.5"/></g><circle cx="20" cy="26" r="6" fill="#ff9f1c" stroke="#1a1030" stroke-width="2"/></g></svg>
+          <svg class="bfly b1" viewBox="0 0 40 30" style="--wc:#ffd23d" aria-hidden="true"><g class="wl"><path class="wing" d="M20 15 C12 2 1 3 3 13 C4 20 13 21 20 16Z"/><path class="wing" d="M20 16 C13 17 6 22 9 27 C14 29 19 23 20 16Z"/></g><g class="wr"><path class="wing" d="M20 15 C28 2 39 3 37 13 C36 20 27 21 20 16Z"/><path class="wing" d="M20 16 C27 17 34 22 31 27 C26 29 21 23 20 16Z"/></g><ellipse cx="20" cy="16" rx="1.8" ry="8" fill="#1a1030"/><path d="M20 9 C18 4 15 3 14 2 M20 9 C22 4 25 3 26 2" stroke="#1a1030" stroke-width="1.2" fill="none"/></svg>
+          <svg class="bfly b2" viewBox="0 0 40 30" style="--wc:#ffffff" aria-hidden="true"><g class="wl"><path class="wing" d="M20 15 C12 2 1 3 3 13 C4 20 13 21 20 16Z"/><path class="wing" d="M20 16 C13 17 6 22 9 27 C14 29 19 23 20 16Z"/></g><g class="wr"><path class="wing" d="M20 15 C28 2 39 3 37 13 C36 20 27 21 20 16Z"/><path class="wing" d="M20 16 C27 17 34 22 31 27 C26 29 21 23 20 16Z"/></g><ellipse cx="20" cy="16" rx="1.8" ry="8" fill="#1a1030"/><path d="M20 9 C18 4 15 3 14 2 M20 9 C22 4 25 3 26 2" stroke="#1a1030" stroke-width="1.2" fill="none"/></svg>
+          <svg class="bfly b3" viewBox="0 0 40 30" style="--wc:#b28dff" aria-hidden="true"><g class="wl"><path class="wing" d="M20 15 C12 2 1 3 3 13 C4 20 13 21 20 16Z"/><path class="wing" d="M20 16 C13 17 6 22 9 27 C14 29 19 23 20 16Z"/></g><g class="wr"><path class="wing" d="M20 15 C28 2 39 3 37 13 C36 20 27 21 20 16Z"/><path class="wing" d="M20 16 C27 17 34 22 31 27 C26 29 21 23 20 16Z"/></g><ellipse cx="20" cy="16" rx="1.8" ry="8" fill="#1a1030"/><path d="M20 9 C18 4 15 3 14 2 M20 9 C22 4 25 3 26 2" stroke="#1a1030" stroke-width="1.2" fill="none"/></svg>
+          </div>
         </div>
       </div>
 
@@ -482,8 +524,16 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
       raf = requestAnimationFrame(function(){ setTimeout(step, 12); });
     })();
   }
+  // Couleur du liquide : lagon attirant jusqu'à 20 %, glisse vers le vert toxique à 40 %.
+  var COOL  = { top:[138,245,228], bot:[53,198,216] };
+  var SLIME = { top:[141,255,46],  bot:[79,196,0] };
+  function mixRGB(a, b, t){ return "rgb(" + a.map(function(v, i){ return Math.round(v + (b[i] - v) * t); }).join(",") + ")"; }
   function renderGauge(){
     var lv = state.level, inf = lv > 100;
+    var t = Math.max(0, Math.min(1, (Math.min(lv, 100) - 20) / 20));   // 0 jusqu'à 20 %, 1 à partir de 40 %
+    $("tubeBox").style.setProperty("--liq-top", mixRGB(COOL.top, SLIME.top, t));
+    $("tubeBox").style.setProperty("--liq-bot", mixRGB(COOL.bot, SLIME.bot, t));
+    $("tubeBox").classList.toggle("bloom", lv <= 20);
     $("liquid").style.height = Math.min(lv, 100) + "%";
     $("mood").textContent = moodFor(lv);
     countTo(lv);
