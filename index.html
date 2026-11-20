@@ -206,6 +206,8 @@ input[type=range]{width:100%;accent-color:var(--blue);height:28px;margin:4px 0 0
 .maintabs button{flex:1;font-size:1.1rem;padding:12px 14px}
 .maintabs button[aria-selected=true]{background:var(--slime)}
 .news{display:flex;flex-direction:column;gap:20px;min-width:0}
+.feed-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px}
+.feed-head h2{margin:0}
 .feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
 .feed li{background:var(--white);border:3px solid var(--ink);padding:10px 12px;box-shadow:3px 3px 0 var(--ink)}
 .feed li.mine{background:#f2ffd6}
@@ -378,11 +380,13 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
       </div>
 
       <div class="card">
-        <h2>Fil d’actualités</h2>
+        <div class="feed-head">
+          <h2>Fil d’actualités</h2>
+          <button class="primary small" id="newsRefresh">Actualiser</button>
+        </div>
         <ul class="feed" id="newsList"></ul>
         <div class="row" style="margin-top:14px">
           <button id="newsMore" hidden>Voir plus anciennes</button>
-          <button id="newsRefresh">Actualiser</button>
         </div>
       </div>
     </section>
