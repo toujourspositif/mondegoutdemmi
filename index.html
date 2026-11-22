@@ -7,6 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#ff7ab8">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dégoût MMI">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+  
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
 :root{
@@ -246,6 +255,74 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
+
+  <style>
+#pwa-install-btn {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 9999;
+  background: #8dff2e;
+  color: #1a1030;
+  border: 3px solid #1a1030;
+  padding: 11px 15px;
+  font: 700 15px "DM Sans", system-ui, sans-serif;
+  box-shadow: 4px 4px 0 #1a1030;
+  cursor: pointer;
+}
+#pwa-install-btn[hidden] {
+  display: none;
+}
+</style>
+
+<button id="pwa-install-btn" hidden type="button">
+  Installer l’application 📲
+</button>
+
+<script>
+(function () {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js");
+    });
+  }
+
+  const installButton = document.getElementById("pwa-install-btn");
+  let installPrompt = null;
+
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+  if (isStandalone) return;
+
+  installButton.hidden = false;
+
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    installPrompt = event;
+  });
+
+  installButton.addEventListener("click", async function () {
+    if (installPrompt) {
+      installPrompt.prompt();
+      await installPrompt.userChoice;
+      installPrompt = null;
+      installButton.hidden = true;
+    } else {
+      alert(
+        "Android : ouvre le menu ⋮ de Chrome puis Installer l’application.\n\n" +
+        "iPhone : dans Safari, touche Partager puis Sur l’écran d’accueil."
+      );
+    }
+  });
+
+  window.addEventListener("appinstalled", function () {
+    installButton.hidden = true;
+  });
+})();
+</script>
+  
 <body>
 <main>
   <h1>Mon dégoût de MMI</h1>
