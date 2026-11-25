@@ -4,10 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mon dégoût de MMI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
-
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#ff7ab8">
 
@@ -16,8 +12,14 @@
 <meta name="apple-mobile-web-app-title" content="Dégoût MMI">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
   
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="site-config.js"></script>
 <style>
+/* Polices hébergées sur le site (aucune requête vers Google Fonts) */
+@font-face{font-family:"Bowlby One";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/bowlby-one-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"DM Sans";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/dm-sans-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"DM Sans";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/dm-sans-latin-700-normal.woff2) format("woff2")}
+
 :root{
   --bg:#ff7ab8; --paper:#fff3a8; --ink:#1a1030; --slime:#8dff2e; --slime-dark:#4fc400;
   --blue:#3d5bff; --white:#fff; --red:#ff4b4b; --shadow:6px 6px 0 var(--ink);
@@ -233,6 +235,21 @@ input[type=range]{width:100%;accent-color:var(--blue);height:28px;margin:4px 0 0
 .f-name{font-family:"Bowlby One",Impact,sans-serif;font-weight:400;background:var(--slime);border:2px solid var(--ink);padding:1px 8px;overflow-wrap:anywhere}
 .f-text{margin:0;overflow-wrap:anywhere;white-space:pre-wrap;font-size:1.02rem}
 .feed .empty{font-weight:700;box-shadow:none}
+
+/* ---------- likes sur les actualités ---------- */
+.like-row{margin-top:10px;display:flex;align-items:center;gap:10px}
+.like{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;font-size:.9rem;box-shadow:3px 3px 0 var(--ink)}
+.like .heart{font-size:1.15em;line-height:1}
+.like[aria-pressed=true]{background:#ffd6e8;color:#b0003a}
+
+/* ---------- légal : consentement, liens, signalement ---------- */
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:500;margin:0}
+.check input{width:auto;margin-top:4px;flex:none}
+.check a{color:var(--blue);font-weight:700}
+.small-link{font-size:.85rem;font-weight:700;color:var(--ink)}
+.legal-nav{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:23px;font-size:.8rem;font-weight:500}
+.legal-nav a{color:var(--ink);background:none;border:0;padding:0;box-shadow:none;text-decoration:underline}
+.legal-nav a:hover{text-decoration-thickness:2px}
 
 /* ---------- connexion ---------- */
 dialog{border:4px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:22px;width:min(420px,92vw);color:var(--ink)}
@@ -484,6 +501,12 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
   </div>
 
   <footer>Sinon vous ça va ? Moi j'ai du temps à perdre, tranquille quoi 🤙 un DS de dev ?? j'ai pas bien compris ...</footer>
+  <nav class="legal-nav" aria-label="Documents légaux">
+    <a href="confidentialite.html">Politique de confidentialité</a>
+    <a href="mentions-legales.html">Mentions légales</a>
+    <a href="cgu.html">CGU</a>
+    <a href="#" id="reportLink">Signaler un contenu</a>
+  </nav>
 </main>
 
 <!-- ======== MODALE CONNEXION ======== -->
@@ -504,6 +527,9 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     <div class="field">
       <label for="pass">Mot de passe (6 caractères minimum)</label>
       <input type="password" id="pass" autocomplete="current-password">
+    </div>
+    <div class="field" id="consentField" hidden>
+      <label class="check"><input type="checkbox" id="consent"><span>J’ai <strong>15 ans ou plus</strong> et j’ai lu la <a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a> et les <a href="cgu.html" target="_blank" rel="noopener">CGU</a>.</span></label>
     </div>
     <p class="forgot" id="forgotRow"><button type="button" class="linkbtn" id="forgotBtn">Mot de passe oublié ?</button></p>
     <p class="err" id="authErr" role="alert"></p>
@@ -921,22 +947,136 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
         top.appendChild(del);
       }
       li.appendChild(top);
+      if(!mine && window.SITE && SITE.email){
+        var rep = el("a", "small-link", "Signaler");
+        rep.href = "mailto:" + SITE.email + "?subject=" + encodeURIComponent("Signalement d'une actualité")
+          + "&body=" + encodeURIComponent("Bonjour,\n\nJe signale l'actualité suivante :\n- Auteur : " + ((r.profiles && r.profiles.pseudo) || "?") + "\n- Date : " + fmtDate(r.created_at) + "\n- Extrait : " + String(r.text).slice(0, 120) + "\n\nMotif (contenu illicite, harcèlement, données personnelles, autre) :\n\nJe confirme que ce signalement est fait de bonne foi et que les informations ci-dessus sont exactes.\n\nNom et e-mail :");
+        top.appendChild(rep);
+      }
       li.appendChild(el("p", "f-text", r.text));
+      if(likesAvailable){
+        var lr = el("div", "like-row");
+        lr.appendChild(likeButton(r));
+        li.appendChild(lr);
+      }
       ul.appendChild(li);
     });
     $("newsMore").hidden = !more;
   }
 
-
-  async function loadNews(){
-    if(!sb){ renderNews([], false, "Les actualités s’activeront une fois Supabase configuré."); return; }
-    var r = await sb.from("posts").select("id,user_id,text,created_at,profiles(pseudo)")
-      .order("created_at", { ascending:false }).range(0, newsLimit);      // newsLimit + 1 lignes
-    if(r.error){ renderNews([], false, "Actualités indisponibles pour le moment."); return; }
-    var rows = r.data || [], more = rows.length > newsLimit;
-    renderNews(more ? rows.slice(0, newsLimit) : rows, more);
+  var likesAvailable = true, myLikes = {};
+  function newsQuery(cols){
+    return sb.from("posts").select(cols).order("created_at", { ascending:false }).range(0, newsLimit);   // newsLimit + 1 lignes
   }
 
+
+
+
+async function loadNews(){
+  if(!sb){
+    renderNews([], false, "Les actualités s’activeront une fois Supabase configuré.");
+    return;
+  }
+
+  // 1. Récupérer les publications, sans jointure profiles
+  var r = await newsQuery("id,user_id,text,created_at,like_count");
+  likesAvailable = !r.error;
+
+  if(r.error){
+    r = await newsQuery("id,user_id,text,created_at");
+  }
+
+  if(r.error){
+    console.error("Erreur Supabase actualités :", r.error);
+    renderNews([], false, "Actualités indisponibles pour le moment.");
+    return;
+  }
+
+  var rows = r.data || [];
+  var more = rows.length > newsLimit;
+  if(more) rows = rows.slice(0, newsLimit);
+
+  // 2. Récupérer les pseudos séparément
+  var userIds = [...new Set(rows.map(function(x){ return x.user_id; }).filter(Boolean))];
+
+  if(userIds.length){
+    var profilesResult = await sb
+      .from("profiles")
+      .select("id,pseudo")
+      .in("id", userIds);
+
+    if(profilesResult.error){
+      console.error("Erreur récupération des pseudos :", profilesResult.error);
+    } else {
+      var profilesById = {};
+
+      (profilesResult.data || []).forEach(function(profile){
+        profilesById[profile.id] = profile.pseudo;
+      });
+
+      rows.forEach(function(post){
+        post.profiles = {
+          pseudo: profilesById[post.user_id] || "Anonyme"
+        };
+      });
+    }
+  }
+
+  // 3. Récupérer les likes
+  myLikes = {};
+
+  if(likesAvailable && user && rows.length){
+    var lk = await sb
+      .from("post_likes")
+      .select("post_id")
+      .in("post_id", rows.map(function(x){ return x.id; }));
+
+    if(!lk.error && lk.data){
+      lk.data.forEach(function(x){
+        myLikes[x.post_id] = true;
+      });
+    }
+  }
+
+  // 4. Afficher les actualités
+  renderNews(rows, more);
+}
+
+
+
+
+
+  
+  /* ---------- likes ---------- */
+  function likeButton(r){
+    var liked = !!myLikes[r.id], count = r.like_count || 0;
+    var b = el("button", "like");
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(liked));
+    b.setAttribute("aria-label", (liked ? "Retirer mon like" : "Aimer cette actualité") + " (" + count + " like" + (count > 1 ? "s" : "") + ")");
+    if(!user) b.title = "Connecte-toi pour aimer une actualité";
+    b.appendChild(el("span", "heart", liked ? "♥" : "♡"));
+    b.appendChild(el("span", "", String(count)));
+    b.addEventListener("click", function(){ toggleLike(r, b); });
+    return b;
+  }
+  async function toggleLike(r, b){
+    if(!user){ $("btnLogin").click(); return; }          // invité : on ouvre la connexion
+    var had = !!myLikes[r.id];
+    b.disabled = true;
+    var res = had
+      ? await sb.from("post_likes").delete().eq("post_id", r.id).eq("user_id", user.id)
+      : await sb.from("post_likes").insert({ post_id: r.id });
+    if(res.error && !(!had && res.error.code === "23505")){      // 23505 = déjà aimé ailleurs
+      b.disabled = false;
+      sayNews("Impossible d’aimer cette actualité pour le moment.");
+      return;
+    }
+    if(had){ delete myLikes[r.id]; r.like_count = Math.max(0, (r.like_count || 0) - 1); }
+    else if(!res.error){ myLikes[r.id] = true; r.like_count = (r.like_count || 0) + 1; }
+    else { myLikes[r.id] = true; }
+    b.replaceWith(likeButton(r));
+  }
 
   async function deleteNews(id){
     if(!confirm("Supprimer cette actualité pour tout le monde ?")) return;
@@ -989,6 +1129,7 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     $("authSubmit").textContent = up ? "Créer mon compte" : "Me connecter";
     $("pass").autocomplete = up ? "new-password" : "current-password";
     $("forgotRow").hidden = up;
+    $("consentField").hidden = !up;
     $("authErr").textContent = "";
   }
   $("tabIn").addEventListener("click", function(){ setTab(false); });
@@ -1022,7 +1163,10 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
         if(pseudo.length < 2 || pseudo.length > 20){ err.textContent = "Choisis un pseudo de 2 à 20 caractères."; return; }
         var chk = await sb.from("profiles").select("id", { count:"exact", head:true }).ilike("pseudo", pseudo);
         if(!chk.error && chk.count > 0){ err.textContent = "Ce pseudo est déjà pris."; return; }
-        var r = await sb.auth.signUp({ email: email, password: pass, options: { data: { pseudo: pseudo } } });
+        if(!$("consent").checked){ err.textContent = "Coche la case : tu confirmes avoir 15 ans ou plus et accepter la politique de confidentialité et les CGU."; return; }
+        var r = await sb.auth.signUp({ email: email, password: pass, options: {
+          data: { pseudo: pseudo, consent_at: new Date().toISOString(), consent_version: (window.SITE && SITE.version) || "", age_min_confirmed: true }
+        } });
         if(r.error){ err.textContent = frError(r.error.message); return; }
         dlg.close();
         if(!r.data.session) say("Compte créé ! Clique sur le lien reçu par email, puis connecte-toi.", 9000);
@@ -1175,6 +1319,16 @@ if(r.error || !r.data || !r.data.success){
       }
     });
   }
+
+  /* ---------- lien « Signaler un contenu » (pied de page) ---------- */
+  (function(){
+    var a = $("reportLink");
+    if(!a) return;
+    if(window.SITE && SITE.email){
+      a.href = "mailto:" + SITE.email + "?subject=" + encodeURIComponent("Signalement d'un contenu")
+        + "&body=" + encodeURIComponent("Bonjour,\n\nJe signale le contenu suivant :\n- Où (onglet, pseudo, date) :\n- Extrait :\n\nMotif (contenu illicite, harcèlement, données personnelles, autre) :\n\nJe confirme que ce signalement est fait de bonne foi et que les informations ci-dessus sont exactes.\n\nNom et e-mail :");
+    } else { a.hidden = true; }
+  })();
 
   /* ---------- démarrage ---------- */
   state = loadGuest();
