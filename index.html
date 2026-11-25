@@ -927,14 +927,30 @@ footer{margin-top:30px;font-size:.9rem;font-weight:700;transform:rotate(-1deg)}
     $("newsMore").hidden = !more;
   }
 
-  async function loadNews(){
-    if(!sb){ renderNews([], false, "Les actualités s’activeront une fois Supabase configuré."); return; }
-    var r = await sb.from("posts").select("id,user_id,text,created_at,profiles(pseudo)")
-      .order("created_at", { ascending:false }).range(0, newsLimit);      // newsLimit + 1 lignes
-    if(r.error){ renderNews([], false, "Actualités indisponibles pour le moment."); return; }
-    var rows = r.data || [], more = rows.length > newsLimit;
-    renderNews(more ? rows.slice(0, newsLimit) : rows, more);
+ 
+async function loadNews(){
+  if(!sb){
+    renderNews([], false, "Les actualités s’activeront une fois Supabase configuré.");
+    return;
   }
+
+  var r = await sb.from("posts")
+    .select("id,user_id,text,created_at,like_count")
+    .order("created_at", { ascending:false })
+    .range(0, newsLimit);
+
+  if(r.error){
+    console.error("Erreur Supabase actualités :", r.error);
+    renderNews([], false, "Actualités indisponibles pour le moment.");
+    return;
+  }
+
+  var rows = r.data || [];
+  var more = rows.length > newsLimit;
+
+  renderNews(more ? rows.slice(0, newsLimit) : rows, more);
+}
+
 
   async function deleteNews(id){
     if(!confirm("Supprimer cette actualité pour tout le monde ?")) return;
